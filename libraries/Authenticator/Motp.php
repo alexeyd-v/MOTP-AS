@@ -2,7 +2,7 @@
 
 class Authenticator_Motp
 {
-    public function validate($hexOtp, $hexSecret, $intPin, $intMaxRange = false, $now = false)
+    public static function validate($hexOtp, $hexSecret, $intPin, $intMaxRange = false, $now = false)
     {
         if ($intMaxRange === false) {
             $intMaxRange = 180;
@@ -43,7 +43,7 @@ class Authenticator_Motp
         return false;
     }
 
-    public function generate($hexSecret, $intPin, $now = false)
+    public static function generate($hexSecret, $intPin, $now = false)
     {
         if ($now === false) {
             $now = strtotime('now');
