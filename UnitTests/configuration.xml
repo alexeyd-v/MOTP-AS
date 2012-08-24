@@ -1,3 +1,4 @@
 <?xml version="1.0"?>
-<phpunit colors="false">
+<phpunit colors="false"
+         bootstrap="bootstrap.php">
 </phpunit>
