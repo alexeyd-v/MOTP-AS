@@ -1,27 +1,64 @@
 <?php
+/**
+ * Mobile OTP Authentication Server - MOTP-AS
+ * 
+ * This project strives to bring you the best implementation of the M-OTP
+ * authentication system, integrated with Radius.
+ *
+ * PHP version 5
+ *
+ * @category Core
+ * @package  Motp-as
+ * @author   Jon Spriggs <jon@sprig.gs>
+ * @license  http://www.gnu.org/licenses/agpl.html AGPLv3
+ * @link     https://github.com/MOTP-AS/MOTP-AS GitHub Repo
+ */
+/**
+ * This class provides the M-OTP algorythm checking.
+ *
+ * @category Authenticators
+ * @package  Motp-as
+ * @author   Jon Spriggs <jon@sprig.gs>
+ * @license  http://www.gnu.org/licenses/agpl.html AGPLv3
+ * @link     https://github.com/MOTP-AS/MOTP-AS GitHub Repo
+ */
 
 class Authenticator_Motp
 {
-    public static function validate($hexOtp, $hexSecret, $intPin, $intMaxRange = false, $now = false)
+    /**
+     * This function validates a M-OTP generated string, by re-generating that
+     * string using the known secret and known PIN for each of the times in the
+     * appropriate range
+     *
+     * @param string $hexOtp      The OTP string to validate
+     * @param string $hexSecret   The known secret
+     * @param int    $intPin      The known PIN
+     * @param int    $intMaxRange The maximum range of times to validate against
+     * @param int    $intTimeNow  (Optional) The time now - for unit testing 
+     * purposes.
+     * 
+     * @return stdClass 
+     */
+    public static function validate($hexOtp, $hexSecret, $intPin, $intMaxRange = false, $intTimeNow = false)
     {
         if ($intMaxRange === false) {
             $intMaxRange = 180;
         }
 
-        if ($now === false) {
-            $now = strtotime('now');
+        if ($intTimeNow === false) {
+            $intTimeNow = strtotime('now');
         }
 
-        $now = substr($now, 0, -1);
+        $intTimeNow = substr($intTimeNow, 0, -1);
 
         for ($i = 0; $i <= $intMaxRange; $i++) {
-            $time = $now - $i;
+            $time = $intTimeNow - $i;
             $otp = substr(md5($time . $hexSecret . $intPin), 0, 6);
             if ($otp === $hexOtp) {
                 $return = new stdClass();
                 $return->offset = -$i;
                 $return->time = $time;
-                $return->now = $now;
+                $return->now = $intTimeNow;
                 return $return;
             }
 
@@ -29,20 +66,29 @@ class Authenticator_Motp
                 continue;
             }
 
-            $time = $now + $i;
+            $time = $intTimeNow + $i;
             $otp = substr(md5($time . $hexSecret . $intPin), 0, 6);
             if ($otp === $hexOtp) {
                 $return = new stdClass();
                 $return->offset = $i;
                 $return->time = $time;
-                $return->now = $now;
+                $return->now = $intTimeNow;
                 return $return;
             }
-
         }
         return false;
     }
 
+    /**
+     * Given a known secret, a known pin and the time now, generate the M-OTP
+     * code for now.
+     *
+     * @param string $hexSecret The secret for the M-OTP token
+     * @param int    $intPin    The PIN for the M-OTP code
+     * @param int    $now       (Optional) The timestamp for now
+     * 
+     * @return string 
+     */
     public static function generate($hexSecret, $intPin, $now = false)
     {
         if ($now === false) {
@@ -52,57 +98,4 @@ class Authenticator_Motp
         $otp = substr(md5($now . $hexSecret . $intPin), 0, 6);
         return $otp;
     }
-}
-
-function checkMOTP ($user, $passcode, $client=FALSE) {
-	$now = gmdate("U");
-	$client="Client: " . ( $client ? "$client (RADIUS)" : $_SERVER['REMOTE_ADDR']." (Web)" );
-
-	$number = get_motp_data ($user, $userdata, $accountdatas, $devicedatas);
-	if (!$number) { /* no user account found */
-		log_auth ($user, "failure", "no valid account");
-		return FALSE;
-	}
-
-	for ($i=0; $i<$number; $i++) {
-		$account = $accountdatas[$i];
-		$device  = $devicedatas[$i];
-		debug("trying user account nr. $i -- $account->pin, $device->secret");
-		$time = checkPasscode ($passcode, $account->pin, $device->secret, $device->timezone, $device->offset, $now);
-		if ($time > 0) break;
-	}
-	debug("user: $user, time: $time");
-
-	$passok = (bool) ($time > 0);					debug("passok=$passok");
-	$locked = (bool) ($userdata->tries > MAXTRIES);			debug("locked=$locked");
-	$replay = (bool) ($passok) && (! ($time > $device->lasttime) );	debug("replay=$replay");
-
-	if ($passok && !$replay && $locked && (LOCK_GRACE_MINS > 0)) {
-		$grace_secs = LOCK_GRACE_MINS * 60;
-		if ($time > $userdata->llogin + $grace_secs) 
-			$locked = FALSE;
-	}
-
-	if ($passok && !$replay && !$locked ) {	// ok
-		$status = TRUE;
-		$userdata->tries=0;
-		$userdata->llogin = $now;
-	} else
-		$status = FALSE;
-	if (!$passok)				// wrong passcode
-		$userdata->tries++;
-	if ($passok && !$replay)		// no replay
-		$device->lasttime = $time;
-
-	if ($passok && !$replay)		// adjust offset
-		$device->offset = 10* ( $time - intval( ($now + $device->timezone*3600)/10) );
-
-	update_motp_data ($userdata, $device);
-
-	if ($status)
-		log_auth ($user, "success", "One Time Password, Device: " . device_full($device) . ", $client");
-	else
-		log_auth ($user, "failure", "One Time Password, $client; passok: ". ($passok?"y":"n") .", locked: ". ($locked?"y":"n") .", replay: ". ($replay?"y":"n"));
-
-	return $status;
 }
