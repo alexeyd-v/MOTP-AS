@@ -7,7 +7,7 @@ class IO_Handler_Test extends PHPUnit_Framework_TestCase
 
     public function setUp()
     {
-        $server = new stdClass();
+        $this->server = new stdClass();
         $this->server->SERVER = array(
             'REQUEST_METHOD' => 'GET',
             'HTTPS' => 1,
@@ -33,6 +33,7 @@ class IO_Handler_Test extends PHPUnit_Framework_TestCase
             '_SERVER' => &$this->server->SERVER
         );
 
+        $this->file = new stdClass();
         $this->file->SERVER = array(
             "PHP_SELF" => '',
             "SCRIPT_NAME" => '',
