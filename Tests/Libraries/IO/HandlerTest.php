@@ -75,7 +75,9 @@ class IO_Handler_Test extends PHPUnit_Framework_TestCase
     public function tearDown()
     {
         header_remove();
+        ob_clean();
     }
+    
     public function parseServer()
     {
         IO_Handler_Testable::reset();
