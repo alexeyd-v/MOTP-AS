@@ -28,11 +28,12 @@ function __autoload($className)
     foreach ($arrClass as $class_point) {
         $class_path .= '/' . $class_point;
     }
+    $return = false;
     if (is_file($class_path . '.php')) {
         include_once $class_path . '.php';
-        return true;
+        $return = true;
     }
-    return false;
+    return $return;
 }
 
 spl_autoload_register('__autoload');
