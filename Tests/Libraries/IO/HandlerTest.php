@@ -7,6 +7,8 @@ class IO_Handler_Test extends PHPUnit_Framework_TestCase
 
     public function setUp()
     {
+        IO_Handler_Testable::reset();
+        ob_start();
         $this->server = new stdClass();
         $this->server->SERVER = array(
             'REQUEST_METHOD' => 'GET',
@@ -16,6 +18,7 @@ class IO_Handler_Test extends PHPUnit_Framework_TestCase
             'REQUEST_URI' => '/service/talk/12/',
             'SCRIPT_NAME' => '/service/index.php',
             'HTTP_ACCEPT' => 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+            'HTTP_ACCEPT_LANGUAGE' => 'en/gb;q=1, en;q=0.9',
             'HTTP_USER_AGENT' => 'Mozilla/5.0 (X11; Ubuntu; Linux i686; rv:12.0) Gecko/20100101 Firefox/12.0'
         );
         $this->server->GET = array();
@@ -69,6 +72,10 @@ class IO_Handler_Test extends PHPUnit_Framework_TestCase
         );
     }
     
+    public function tearDown()
+    {
+        header_remove();
+    }
     public function parseServer()
     {
         IO_Handler_Testable::reset();
@@ -476,6 +483,15 @@ class IO_Handler_Test extends PHPUnit_Framework_TestCase
         $this->assertFalse($request->hasMediaType('rest'));
         $this->assertTrue($request->hasMediaType('media'));
 
+        $this->server->SERVER['REQUEST_URI'] = '/service/talk/12.js';
+        $request = $this->parseServer();
+        $this->assertTrue($request->get_requestUrlFull() == 'https://localhost:1443/service/talk/12.js');
+        $this->assertTrue($request->get_strPrefAcceptType() == 'text/javascript');
+        $this->assertFalse($request->hasMediaType());
+        $this->assertFalse($request->hasMediaType('site'));
+        $this->assertFalse($request->hasMediaType('rest'));
+        $this->assertTrue($request->hasMediaType('media'));
+
         $this->server->SERVER['REQUEST_URI'] = '/service/talk/12.random';
         $request = $this->parseServer();
         $this->assertTrue($request->get_requestUrlFull() == 'https://localhost:1443/service/talk/12.random');
@@ -592,7 +608,27 @@ class IO_Handler_Test extends PHPUnit_Framework_TestCase
         $this->assertTrue($request->get_requestUrlFull() == 'https://localhost:1443/service/talk/12/');
     }
 
+    public function testSimulatedServerConnectionWithDeletePostValue()
+    {
+        $this->server->SERVER['REQUEST_METHOD'] = 'POST';
+        $this->server->SERVER['REQUEST_URI'] = '/service/talk/12/';
+        $this->server->POST['HTTPaction'] = 'DELETE';
+        $request = $this->parseServer();
+        $this->assertTrue($request->get_strRequestMethod() == 'delete');
+        $this->assertTrue($request->get_requestUrlFull() == 'https://localhost:1443/service/talk/12/');
+    }
     
+
+    public function testSimulatedServerConnectionWithHeadGetValue()
+    {
+        $this->server->SERVER['REQUEST_METHOD'] = 'GET';
+        $this->server->SERVER['REQUEST_URI'] = '/service/talk/12/?HTTPaction=HEAD';
+        $this->server->GET['HTTPaction'] = 'HEAD';
+        $request = $this->parseServer();
+        $this->assertTrue($request->get_strRequestMethod() == 'head');
+        $this->assertTrue($request->get_requestUrlFull() == 'https://localhost:1443/service/talk/12/?HTTPaction=HEAD');
+    }
+
     public function testSimulatedFileConnection()
     {
         $request = $this->parseFile();
@@ -619,6 +655,67 @@ class IO_Handler_Test extends PHPUnit_Framework_TestCase
         $request = $this->parseFile();
         $this->assertTrue(strpos($request->get_requestUrlFull(), "/bootstrap.php") > 0);
     }
+    
+    /**
+     * @expectedException LogicException
+     */
+    public function testGetGenerationTimeWithoutSettingItFirst()
+    {
+        @IO_Handler::getGenerationTime();
+    }
+    
+    public function testSetGenerationTime()
+    {
+        IO_Handler::setGenerationTime(0);
+        $this->assertTrue(IO_Handler::getGenerationTime(0) == 0);
+        $this->assertTrue(IO_Handler::getGenerationTime(10) == 10);
+    }
+    
+    public function testSetGenerationTimeRecalc()
+    {
+        IO_Handler::setGenerationTime();
+        $this->assertTrue(IO_Handler::getGenerationTime() >= 0);
+    }
+
+    /**
+     * @expectedException LogicException
+     */
+    public function testSetGenerationTimeTwice()
+    {
+        IO_Handler::setGenerationTime(0);
+        @IO_Handler::setGenerationTime(0);
+    }
+    
+    public function testRedirection()
+    {
+        $this->parseServer();
+        IO_Handler::redirectTo('http://www.google.com');
+    }
+    
+    public function testValidTranslation()
+    {
+        $this->parseServer();
+        $this->assertTrue(IO_Handler::translate(array('en' => 'test'), 'en') == 'test');
+        $this->assertTrue(IO_Handler::translate(array('en' => 'test')) == 'test');
+    }
+
+    /**
+     * @expectedException InvalidArgumentException
+     */
+    public function testTranslationWithNoArray()
+    {
+        $this->parseServer();
+        @IO_Handler::translate();
+    }
+    
+    /**
+     * @expectedException InvalidArgumentException
+     */
+    public function testTranslationWithNoArrayValues()
+    {
+        $this->parseServer();
+        @IO_Handler::translate(array());
+    }
 }
 
 class IO_Handler_Testable extends IO_Handler
@@ -626,5 +723,6 @@ class IO_Handler_Testable extends IO_Handler
     public static function reset()
     {
         self::$objData = null;
+        self::$floatGenerationTime = null;
     }
 }
