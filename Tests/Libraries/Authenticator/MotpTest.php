@@ -61,7 +61,9 @@ class Authenticator_Motp_Test extends PHPUnit_Framework_TestCase
         $intPin = '0000';
         $hexSecret = '1234567890abcdef';
         $hexOtp = '308c3c';
-        $result = Authenticator_Motp::validate($hexOtp, $hexSecret, $intPin, 180, $intNow);
+        // Note, 180 is the value assigned to the 4th column in the event of
+        // a null being passed.
+        $result = Authenticator_Motp::validate($hexOtp, $hexSecret, $intPin, null, $intNow);
         $this->assertTrue(is_object($result));
         $this->assertTrue($result->offset == -180);
         $this->assertTrue($result->time == -180);
@@ -95,5 +97,17 @@ class Authenticator_Motp_Test extends PHPUnit_Framework_TestCase
         $hexOtp = 'affcf2';
         $otp = Authenticator_Motp::generate($hexSecret, $intPin, $intNow);
         $this->assertTrue($otp == $hexOtp);
+    }
+    
+    public function testValidatingAGeneratedCodeAgainstItsCalculatedValue()
+    {
+        $intPin = '0000';
+        $hexSecret = '1234567890abcdef';
+        $hexOtp = Authenticator_Motp::generate($hexSecret, $intPin);
+        $result = Authenticator_Motp::validate($hexOtp, $hexSecret, $intPin);
+        $this->assertTrue(is_object($result));
+        $this->assertTrue($result->offset == 0);
+        $this->assertTrue($result->now == $result->time);
+        
     }
 }
