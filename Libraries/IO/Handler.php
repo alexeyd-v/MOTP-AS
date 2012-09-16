@@ -32,6 +32,7 @@ class IO_Handler
      * @var IO_Handler
      */
     protected static $objData = null;
+    protected static $floatGenerationTime = null;
     protected $arrRequestUrl      = null;
     protected $requestUrlFull     = null;
     protected $requestUrlExParams = null;
@@ -217,7 +218,8 @@ class IO_Handler
             
             switch(strtolower(self::$objData->SERVER['REQUEST_METHOD'])) {
             case 'head':
-                // Typically a request to see if this has changed since the last time
+                // Typically a request to see if this has changed since the last 
+                // time
                 self::$objData->strRequestMethod = 'head';
                 $data = self::$objData->REQUEST;
                 break;
@@ -256,7 +258,8 @@ class IO_Handler
             self::$objData->requestUrlExParams = $matches[1];
         }
         
-        // Store any of the parameters we aquired before. Add an "if-modified-since" parameter too.
+        // Store any of the parameters we aquired before. Add an 
+        // "if-modified-since" parameter too.
 
         if (isset(self::$objData->SERVER['HTTP_IF_MODIFIED_SINCE'])) {
             // Taken from http://www.justsoftwaresolutions.co.uk/webdesign ... 
@@ -278,7 +281,8 @@ class IO_Handler
             }
         }
         
-        // Make the list of accepted types into an array, and then step through it.
+        // Make the list of accepted types into an array, and then step through 
+        // it.
         if (isset(self::$objData->SERVER['HTTP_ACCEPT_LANGUAGE'])) {
             $arrAccept = explode(',', strtolower(str_replace(' ', '', self::$objData->SERVER['HTTP_ACCEPT_LANGUAGE'])));
             foreach ($arrAccept as $acceptItem) {
@@ -303,7 +307,8 @@ class IO_Handler
         if (isset(self::$objData->arrRqstParameters['HTTPaction'])) {
             switch(strtolower(self::$objData->arrRqstParameters['HTTPaction'])) {
             case 'head':
-                // Typically a request to see if this has changed since the last time
+                // Typically a request to see if this has changed since the 
+                // last time
                 self::$objData->strRequestMethod = 'head';
                 unset(self::$objData->arrRqstParameters['HTTPaction']);
                 break;
@@ -320,7 +325,8 @@ class IO_Handler
             self::$objData->arrRequestUrl['path'] = substr(self::$objData->arrRequestUrl['path'], 0, -1);
         }
 
-        // If the path is just / then keep it, otherwise remove the leading slash from the path
+        // If the path is just / then keep it, otherwise remove the leading 
+        // slash from the path
 
         $match = preg_match('/\/(.*)/', self::$objData->arrRequestUrl['path'], $matches);
         if ($match > 0) {
@@ -336,11 +342,13 @@ class IO_Handler
         self::$objData->strPathSite = '';
         self::$objData->strPathRouter = self::$objData->arrRequestUrl['path'];
 
-        // Next make sure that we have a script name, and that this is not just a CLI script.
+        // Next make sure that we have a script name, and that this is not just 
+        // a CLI script.
 
         if (isset(self::$objData->SERVER['REQUEST_METHOD']) && isset(self::$objData->SERVER['SCRIPT_NAME'])) {
 
-            // Separate out the individual characters of the URL path we received and the script path
+            // Separate out the individual characters of the URL path we 
+            // received and the script path
 
             $arrPathElements = str_split(self::$objData->arrRequestUrl['path']);
             $match = preg_match('/\/(.*)$/', self::$objData->SERVER['SCRIPT_NAME'], $matches);
@@ -357,20 +365,23 @@ class IO_Handler
                 $char++;
             }
 
-            // Use that information to build the pathSite (the base URL for the site) and the routed path (/my/action)
+            // Use that information to build the pathSite (the base URL for the 
+            // site) and the routed path (/my/action)
 
             self::$objData->strPathSite = substr(self::$objData->arrRequestUrl['path'], 0, $char);
             self::$objData->strPathRouter = substr(self::$objData->arrRequestUrl['path'], $char);
         }
 
-        // To ensure the first character of the pathRouter isn't '/', check for it and trim it.
-        // I can't actually figure out why this went in here, but I don't seem to be able to test it!
+        // To ensure the first character of the pathRouter isn't '/', check for 
+        // it and trim it. I can't actually figure out why this went in here, 
+        // but I don't seem to be able to test it!
         
         if (substr(self::$objData->strPathRouter, 0, 1) == '/') {
             self::$objData->strPathRouter = substr(self::$objData->strPathRouter, 1);
         }
         
-        // And ensure the last character of the site path isn't '/', check for that and trim it.
+        // And ensure the last character of the site path isn't '/', check for 
+        // that and trim it.
         if (substr(self::$objData->strPathSite, -1) == '/') {
             self::$objData->strPathSite = substr(self::$objData->strPathSite, 0, -1);
         }
@@ -379,8 +390,9 @@ class IO_Handler
 
         self::$objData->arrPathItems = explode('/', self::$objData->strPathRouter);
 
-        // Let's talk about the format to return data as, or rather, the preferred (Internet Media) accepted-type
-        // This was inserted after reading this comment:
+        // Let's talk about the format to return data as, or rather, the 
+        // preferred (Internet Media) accepted-type. This was inserted after 
+        // reading this comment:
         // http://www.lornajane.net/posts/2012/building-a-restful-php-server-understanding-the-request#comment-3218
 
         self::$objData->strPathFormat = '';
@@ -391,13 +403,15 @@ class IO_Handler
 
         // This is based on http://stackoverflow.com/questions/1049401/how-to-select-content-type-from-http-accept-header-in-php
 
-        // Make the list of accepted types into an array, and then step through it.
+        // Make the list of accepted types into an array, and then step through 
+        // it.
         if (isset(self::$objData->SERVER['HTTP_ACCEPT'])) {
             $arrAccept = explode(',', strtolower(str_replace(' ', '', self::$objData->SERVER['HTTP_ACCEPT'])));
             foreach ($arrAccept as $acceptItem) {
 
-                // All accepted Internet Media Types (or Mime Types, as they once we known) have a Q (Quality?) value
-                // The default "Q" value is 1;
+                // All accepted Internet Media Types (or Mime Types, as they 
+                // once we known) have a Q (Quality?) value. The default "Q" 
+                // value is 1;
                 $q = 1;
 
                 // but the client may have sent another value
@@ -406,8 +420,9 @@ class IO_Handler
                     list($acceptItem, $q) = explode(';q=', $acceptItem);
                 }
 
-                // If the quality is 0, it's not accepted - in this case, so why bother logging it?
-                // Also, IE has a bad habit of saying it accepts everything. Ignore that case.
+                // If the quality is 0, it's not accepted - in this case, so why 
+                // bother logging it? Also, IE has a bad habit of saying it 
+                // accepts everything. Ignore that case.
 
                 if ($q > 0 && $acceptItem != '*/*') {
                     self::$objData->arrAcceptTypes[$acceptItem] = $q;
@@ -420,31 +435,39 @@ class IO_Handler
                 }
             }
 
-            // If the last item contains a dot, for example file.json, then we can suspect the user is specifying the file format to prefer.
-            // So, let's look at the last chunk of the requested URL. Does it contain a dot in it?
+            // If the last item contains a dot, for example file.json, then we 
+            // can suspect the user is specifying the file format to prefer. So, 
+            // let's look at the last chunk of the requested URL. Does it 
+            // contain a dot in it?
 
             $arrLastUrlItem = explode('.', self::$objData->arrPathItems[count(self::$objData->arrPathItems)-1]);
             if (count($arrLastUrlItem) > 1) {
 
-                // First we clear down the last path item, as we're going to be re-creating it without the format tag
+                // First we clear down the last path item, as we're going to be 
+                // re-creating it without the format tag
 
                 self::$objData->arrPathItems[count(self::$objData->arrPathItems)-1] = '';
 
-                // Next we step through each part of that last chunk, looking for the bit after the last dot.
+                // Next we step through each part of that last chunk, looking 
+                // for the bit after the last dot.
 
                 foreach ($arrLastUrlItem as $key=>$urlItem) {
 
-                    // If it's the last part, this is the format we'll be using, otherwise rebuild that last item
+                    // If it's the last part, this is the format we'll be using, 
+                    // otherwise rebuild that last item
 
                     if ($key + 1 == count($arrLastUrlItem)) {
                         self::$objData->strPathFormat = $urlItem;
 
-                        // Remove the pathFormat from the pathRouter, and the "."
+                        // Remove the pathFormat from the pathRouter, and the 
+                        // "."
 
                         self::$objData->strPathRouter = substr(self::$objData->strPathRouter, 0, - (1 + strlen(self::$objData->strPathFormat)));
 
-                        // Now let's try and mark the format up as something we can use as an accept type. Here are the common ones
-                        // you're likely to see (from http://en.wikipedia.org/wiki/Internet_media_type)
+                        // Now let's try and mark the format up as something we 
+                        // can use as an accept type. Here are the common ones
+                        // you're likely to see (from 
+                        // http://en.wikipedia.org/wiki/Internet_media_type)
 
                         switch (strtolower(self::$objData->strPathFormat)) {
 
@@ -693,7 +716,8 @@ class IO_Handler
                             );
                             break;
 
-                        // Not one of the above types. Hopefully you won't see this!!!
+                        // Not one of the above types. Hopefully you won't see 
+                        // this!!!
 
                         default:
                             self::$objData->setAcceptType(
@@ -711,7 +735,8 @@ class IO_Handler
             }
         }
 
-        // Next let's build the "basePath" - this is the URL which refers to base of the script and is used in the HTML to point back to
+        // Next let's build the "basePath" - this is the URL which refers to 
+        // base of the script and is used in the HTML to point back to
         // resources within this service.
 
         self::$objData->strBasePath = self::$objData->arrRequestUrl['scheme'] . "://";
@@ -726,7 +751,8 @@ class IO_Handler
         }
         self::$objData->strBasePath .=  '/';
 
-        // Let's get the user agent - it's just for a giggle in most cases, as it's not authorititive, but it might help if you're
+        // Let's get the user agent - it's just for a giggle in most cases, as 
+        // it's not authorititive, but it might help if you're
         // getting site stats, or trying not to track people with cookies.
 
         if (isset(self::$objData->SERVER['HTTP_USER_AGENT'])) {
@@ -756,12 +782,12 @@ class IO_Handler
         if ($mediaType == null) {
             $mediaType = $this->strPrefAcceptType;
         }
-        if (isset(IO_Handler_MediaTypes::$arrMediaTypes[$mediaType])) {
+        if (isset(IO_Handler_StaticData::$arrMediaTypes[$mediaType])) {
             switch ($category) {
             case 'media':
             case 'rest':
             case 'site':
-                return IO_Handler_MediaTypes::$arrMediaTypes[$mediaType][$category];
+                return IO_Handler_StaticData::$arrMediaTypes[$mediaType][$category];
                 break;
             default:
                 return false;
@@ -943,7 +969,8 @@ class IO_Handler
     
     /**
      * Return the array of Internet Types (Mime Types) your browser will accept, 
-     * or, where forced by supplying a known file extension, that value as the top response.
+     * or, where forced by supplying a known file extension, that value as the 
+     * top response.
      *
      * @return array 
      */
@@ -1014,9 +1041,19 @@ class IO_Handler
  * @license  http://www.gnu.org/licenses/agpl.html AGPLv3
  * @link     https://github.com/MOTP-AS/MOTP-AS GitHub Repo
  */
-class IO_Handler_MediaTypes
+class IO_Handler_StaticData
 {
-        public static $arrMediaTypes = array(
+    /**
+     * This stores the various Media/MIME types for requests and responses that
+     * may be seen. Each array entry stores another array of three values - 
+     * media, rest and site. Media is a static file type such as images, 
+     * documents, javascript scripts or CSS, rest is a programatic type of 
+     * response (usually things like JSON, XML, or HTML), while site is types
+     * of data that would be used in non-REST site rendering (HTML or Text).
+     *
+     * @var array 
+     */
+    public static $arrMediaTypes = array(
         'application/json' => array(
             'media' => false, 'rest' => true, 'site' => false
         ),

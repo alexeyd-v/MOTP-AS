@@ -39,13 +39,13 @@ class Authenticator_Motp
      * 
      * @return stdClass 
      */
-    public static function validate($hexOtp, $hexSecret, $intPin, $intMaxRange = false, $intTimeNow = false)
+    public static function validate($hexOtp, $hexSecret, $intPin, $intMaxRange = null, $intTimeNow = null)
     {
-        if ($intMaxRange === false) {
+        if ($intMaxRange === null) {
             $intMaxRange = 180;
         }
 
-        if ($intTimeNow === false) {
+        if ($intTimeNow === null) {
             $intTimeNow = strtotime('now');
         }
 
@@ -83,19 +83,19 @@ class Authenticator_Motp
      * Given a known secret, a known pin and the time now, generate the M-OTP
      * code for now.
      *
-     * @param string $hexSecret The secret for the M-OTP token
-     * @param int    $intPin    The PIN for the M-OTP code
-     * @param int    $now       (Optional) The timestamp for now
+     * @param string $hexSecret  The secret for the M-OTP token
+     * @param int    $intPin     The PIN for the M-OTP code
+     * @param int    $intTimeNow (Optional) The timestamp for now
      * 
      * @return string 
      */
-    public static function generate($hexSecret, $intPin, $now = false)
+    public static function generate($hexSecret, $intPin, $intTimeNow = null)
     {
-        if ($now === false) {
-            $now = strtotime('now');
+        if ($intTimeNow === null) {
+            $intTimeNow = strtotime('now');
         }
-        $now = substr($now, 0, -1);
-        $otp = substr(md5($now . $hexSecret . $intPin), 0, 6);
+        $intTimeNow = substr($intTimeNow, 0, -1);
+        $otp = substr(md5($intTimeNow . $hexSecret . $intPin), 0, 6);
         return $otp;
     }
 }
