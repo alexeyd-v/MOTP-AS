@@ -1,15 +1,13 @@
-<?php
-
-//ldap_set_option($ds,LDAP_OPT_PROTOCOL_VERSION,3);
-//ldap_set_option($ds, LDAP_OPT_REFERRALS, 0); // "In order to perform the searches on Windows 2003 Server Active Directory you have
-
 function SyncLdapUsers()
 {
 $counter=0;
 $newuser = new stdClass();
 $ldapconn = ldap_connect(@LDAP_SERVER);
+ldap_set_option($ldapconn, LDAP_OPT_REFERRALS, 0);
+ldap_set_option($ldapconn, LDAP_OPT_PROTOCOL_VERSION, 3); 
 $ldf=str_replace("&amp;", "&", @LDAP_FILTER);
 
+ 
 
   if ($ldapconn)
    $ldapbind = ldap_bind($ldapconn, @LDAP_LOGIN, @LDAP_PASSWD);
@@ -19,6 +17,8 @@ $ldf=str_replace("&amp;", "&", @LDAP_FILTER);
   $justthese = array("displayname", "mail", "company", "department", "physicaldeliveryofficename", "mobile", "ipphone", "telephonenu
   $sr=ldap_search($ldapconn, @LDAP_DN,$ldf, $justthese);
   $info = ldap_get_entries($ldapconn, $sr);
+  ldap_close($ldapconn);
+
 
  for ($i=0; $i < $info["count"]; $i++) {
 
@@ -55,4 +55,3 @@ $ldf=str_replace("&amp;", "&", @LDAP_FILTER);
    }
 return $counter;
 }
-
